@@ -23,12 +23,12 @@ public class TestDataProvider extends SortableDataProvider<User, String> {
     
     @Override
     public Iterator<? extends User> iterator(long first, long count) {
-        return userList.iterator();
+        return userList.subList((int)first, (int)(first + count)).iterator();
     }
 
     @Override
     public long size() {
-        return userList.size() * 2;
+        return userList.size();
     }
 
     @Override
