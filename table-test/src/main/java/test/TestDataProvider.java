@@ -14,8 +14,11 @@ public class TestDataProvider extends SortableDataProvider<User, String> {
     private static List<User> userList = new ArrayList<User>();
     
     static {
-        userList.add(new User("Joe", "Tester"));
-        userList.add(new User("Sally", "Tester"));
+        userList.add(new User("Alice", "Tester"));
+        userList.add(new User("Bob", "Tester"));
+        userList.add(new User("Carol", "Tester"));
+        userList.add(new User("Debbie", "Tester"));
+        userList.add(new User("Eve", "Tester"));
     }
     
     @Override
