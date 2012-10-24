@@ -4,90 +4,97 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.wicket.Component;
-import org.apache.wicket.MarkupContainer;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
-import org.apache.wicket.extensions.markup.html.repeater.data.detailstable.AjaxFallbackDefaultDetailsTable;
-import org.apache.wicket.extensions.markup.html.repeater.data.detailstable.DefaultDetailsTable;
-import org.apache.wicket.extensions.markup.html.repeater.data.detailstable.TogglingDetailsColumn;
+import org.apache.wicket.extensions.markup.html.repeater.data.detailstable.DetailsTable;
+import org.apache.wicket.extensions.markup.html.repeater.data.grid.ICellPopulator;
+import org.apache.wicket.extensions.markup.html.repeater.data.table.AbstractColumn;
+import org.apache.wicket.extensions.markup.html.repeater.data.table.HeadersToolbar;
 import org.apache.wicket.extensions.markup.html.repeater.data.table.IColumn;
+import org.apache.wicket.extensions.markup.html.repeater.data.table.NavigationToolbar;
 import org.apache.wicket.extensions.markup.html.repeater.data.table.PropertyColumn;
 import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.panel.Fragment;
+import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 
-
-
 public class TableTestPage extends WebPage {
 
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
+	private DetailsTable<User, String> table;
 
-    public TableTestPage() {
-        final Form<User> form = new Form<User>("form");
-        
-        add(form);
+	public TableTestPage() {
+		final Form<User> form = new Form<User>("form");
 
-        final TestDataProvider tdp = new TestDataProvider();
-        final List<IColumn<User, String>> columns = new ArrayList<IColumn<User, String>>();
-        final DetailsColumn detailsColumn = new DetailsColumn(form);
-        
-        columns.add(detailsColumn);
-        columns.add(new PropertyColumn<User, String>(Model.of("First Name"), "firstName", "firstName"));
-        columns.add(new PropertyColumn<User, String>(Model.of("Last Name"), "lastName", "lastName"));
+		add(form);
 
-        form.add(new DefaultDetailsTable<User, String>("table", columns, tdp, 2));
-        form.add(new AjaxFallbackDefaultDetailsTable<User, String>("ajax-table", columns, tdp, 2));
-    }
-    
-    private class DetailsColumn extends TogglingDetailsColumn<User, String> {
+		final TestDataProvider tdp = new TestDataProvider();
 
-        private static final long serialVersionUID = 1L;
-        
-        private MarkupContainer parent;
-        
-        public DetailsColumn(MarkupContainer parent) {
-            this.parent = parent;
-        }
-        
-        public Component getDetailsComponent(String id, IModel<User> model) {
-            Fragment detailsFragment = new Fragment(id, "details-fragment", parent);
-            
-            User user = model.getObject();
-            
-            Label label = new Label("details", user.getFirstName() + " " + user.getLastName());
+		final List<IColumn<User, String>> columns = new ArrayList<IColumn<User, String>>();
+		columns.add(new ToggleColumn());
+		columns.add(new PropertyColumn<User, String>(Model.of("First Name"),
+				"firstName", "firstName"));
+		columns.add(new PropertyColumn<User, String>(Model.of("Last Name"),
+				"lastName", "lastName"));
 
-            detailsFragment.add(label);
-            return detailsFragment;
-        }
-        
-        public Component getCellComponent(String id, IModel<User> model, final Component detailsComponent) {
-            Fragment buttonFragment = new Fragment(id, "button-fragment", parent);
+		table = new DetailsTable<User, String>("table", columns, tdp, 2) {
+			@Override
+			public Component newDetailsComponent(String id, IModel<User> model) {
+				Fragment detailsFragment = new Fragment(id, "details-fragment",
+						TableTestPage.this);
 
-            AjaxButton button = new AjaxButton("button") {
+				User user = model.getObject();
 
-                private static final long serialVersionUID = 1L;
+				Label label = new Label("details", user.getFirstName() + " "
+						+ user.getLastName());
 
-                @Override
-                protected void onError(AjaxRequestTarget target, Form<?> form) {
-                    System.out.println("ERROR");
-                }
+				detailsFragment.add(label);
+				return detailsFragment;
+			}
+		};
+		table.addTopToolbar(new NavigationToolbar(table));
+		table.addTopToolbar(new HeadersToolbar<String>(table, tdp));
+		form.add(table);
+	}
 
-                @Override
-                protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
-                    target.add(detailsComponent);
-                    detailsComponent.setVisible(detailsComponent.isVisible() ? false : true);
-                }
+	private class ToggleColumn extends AbstractColumn<User, String> {
 
-            };
+		private static final long serialVersionUID = 1L;
 
-            button.setDefaultFormProcessing(false);
-            buttonFragment.add(button);
-            
-            return buttonFragment;
-        }
-        
-    }
+		public ToggleColumn() {
+			super(Model.of("&nbsp;"), null);
+		}
+
+		@Override
+		public void populateItem(final Item<ICellPopulator<User>> cellItem,
+				String componentId, final IModel<User> rowModel) {
+
+			Fragment buttonFragment = new Fragment(componentId,
+					"button-fragment", TableTestPage.this);
+
+			AjaxButton button = new AjaxButton("button") {
+
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				protected void onError(AjaxRequestTarget target, Form<?> form) {
+					System.out.println("ERROR");
+				}
+
+				@Override
+				protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
+					table.toggleDetails(target, rowModel.getObject());
+				}
+
+			};
+
+			button.setDefaultFormProcessing(false);
+			buttonFragment.add(button);
+
+			cellItem.add(buttonFragment);
+		}
+	}
 }
